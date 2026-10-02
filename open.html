@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liens NAS</title>
+<style>
+:root{--bg:#f3f5f4;--fg:#1c2a2a;--mut:#5d6b6b;--card:#fff;--line:#cfd8d6;--acc:#0f6b64;--accfg:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#161d1d;--fg:#e6eeec;--mut:#98a8a5;--card:#1f2828;--line:#33403e;--acc:#4fc1b6;--accfg:#0e1b1a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Georgia,"Times New Roman",serif;display:flex;justify-content:center;padding:32px 16px}
+main{width:100%;max-width:640px}
+h1{font-size:1.7rem;margin:0 0 4px}
+p.s{color:var(--mut);margin:0 0 24px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px}
+label{display:block;font:600 .9rem system-ui,sans-serif;margin:14px 0 4px}
+label:first-child{margin-top:0}
+input{width:100%;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg);font:.95rem ui-monospace,Consolas,monospace}
+input:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.h{font:.82rem system-ui,sans-serif;color:var(--mut);margin-top:4px}
+button{margin-top:16px;padding:10px 18px;border:0;border-radius:4px;background:var(--acc);color:var(--accfg);font:600 .95rem system-ui,sans-serif;cursor:pointer}
+#out{word-break:break-all;margin-top:18px;padding:12px;border:1px dashed var(--line);border-radius:4px;font:.9rem ui-monospace,Consolas,monospace;min-height:3em}
+#err{color:#b3261e;font:.9rem system-ui,sans-serif;margin-top:8px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+(function(){
+  var app = document.getElementById('app');
+  var params = new URLSearchParams(location.search);
+  var p = params.get('p');
+
+  function clean(path){
+    // Normalise : antislashs -> slashs, retire les slashs de début/fin
+    return path.replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  }
+  function safe(path){ return path && path.split('/').indexOf('..') === -1; }
+  function toProto(path){ return 'nasopen://' + path.split('/').map(encodeURIComponent).join('/'); }
+
+  /* ---------- Mode redirection (lien reçu) ---------- */
+  if (p !== null) {
+    p = clean(p);
+    app.innerHTML = '<h1>Ouverture du fichier</h1><p class="s" id="m"></p>';
+    var m = document.getElementById('m');
+    if (!safe(p)) { m.textContent = 'Lien invalide.'; return; }
+    var url = toProto(p);
+    var a = document.createElement('a');
+    a.href = url; a.textContent = 'Cliquez ici si rien ne se passe';
+    m.appendChild(a);
+    location.href = url;
+    return;
+  }
+
+  /* ---------- Mode générateur ---------- */
+  app.innerHTML =
+    '<h1>Générateur de liens NAS</h1>' +
+    '<p class="s">Collez le chemin d\'un fichier du dossier synchronisé, puis partagez le lien obtenu sur Discord, Teams ou par e-mail.</p>' +
+    '<div class="box">' +
+      '<label for="root">Dossier de synchronisation à retirer (facultatif)</label>' +
+      '<input id="root" placeholder="C:\\Users\\Alice\\SynologyDrive" autocomplete="off">' +
+      '<div class="h">Si vous collez un chemin complet, cette partie est supprimée pour ne garder que le chemin relatif.</div>' +
+      '<label for="path">Chemin du fichier</label>' +
+      '<input id="path" placeholder="Projets\\Budget.xlsx" autocomplete="off">' +
+      '<button id="go" type="button">Générer le lien</button>' +
+      '<div id="err" role="alert"></div>' +
+      '<div id="out" aria-live="polite"></div>' +
+      '<button id="copy" type="button" hidden>Copier le lien</button>' +
+    '</div>';
+
+  var root = document.getElementById('root'), path = document.getElementById('path'),
+      out = document.getElementById('out'), err = document.getElementById('err'),
+      copy = document.getElementById('copy');
+  try { root.value = localStorage.getItem('nasroot') || ''; } catch(e){}
+
+  function generate(){
+    err.textContent = ''; out.textContent = ''; copy.hidden = true;
+    var r = clean(root.value), f = clean(path.value);
+    try { localStorage.setItem('nasroot', root.value); } catch(e){}
+    if (r && f.toLowerCase().indexOf(r.toLowerCase() + '/') === 0) f = f.slice(r.length + 1);
+    if (!f) { err.textContent = 'Saisissez le chemin du fichier.'; return; }
+    if (!safe(f)) { err.textContent = 'Le chemin ne doit pas contenir « .. ».'; return; }
+    var base = location.origin + location.pathname;
+    out.textContent = base + '?p=' + f.split('/').map(encodeURIComponent).join('/');
+    copy.hidden = false;
+  }
+  document.getElementById('go').addEventListener('click', generate);
+  path.addEventListener('keydown', function(e){ if (e.key === 'Enter') generate(); });
+  copy.addEventListener('click', function(){
+    var t = out.textContent;
+    function ok(){ copy.textContent = 'Lien copié'; setTimeout(function(){ copy.textContent = 'Copier le lien'; }, 1500); }
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, function(){ err.textContent = 'Copie impossible : sélectionnez le lien manuellement.'; });
+    else err.textContent = 'Copie impossible : sélectionnez le lien manuellement.';
+  });
+})();
+</script>
+</body>
+</html>
