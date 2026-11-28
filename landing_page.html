@@ -11,14 +11,19 @@
 	<script defer> 
 	// A/B Split Test Redirect
 	(function splitTest(){
-		const r = Math.random() * 100
+		const r = Math.random() * 100;
+		var param = "?roll" + Math.random() * 100;
+		if (document.documentElement.clientWidth < 900) {   param+= "&media=mobile" }
+		var query = '';
 		if (r <= 50)
 		{
-			window.location.replace("https://tally.so/r/vXYj9d");
+			query = "https://tally.so/r/vXYj9d";
 		}
 		else{
-			window.location.replace("https://tally.so/r/4arvbr");
+			query = "https://tally.so/r/vXYj9d";
 		}
+
+		window.location.replace(query);
 	})();
 </script>
 </html>
