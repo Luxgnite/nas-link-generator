@@ -13,7 +13,7 @@
 	(function splitTest(){
 		const r = Math.random() * 100;
 		var param = "?roll" + Math.random() * 100;
-		if (document.documentElement.clientWidth < 900) {   param+= "&media=mobile"; }
+		if (document.documentElement.clientWidth < 900) {   param+= "&media=mobile" }
 		var query = '';
 		if (r <= 50)
 		{
@@ -23,7 +23,7 @@
 			query = "https://tally.so/r/vXYj9d";
 		}
 
-		window.location.replace(query);
+		window.location.replace(query + param);
 	})();
 </script>
 </html>
